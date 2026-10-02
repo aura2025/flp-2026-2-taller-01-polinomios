@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Valentina Valencia Lopez  2459626, Aura Maria Pelaez Luna 2459422
 
 ;; Taller 1 — Polinomios dispersos.
 ;; Parte 3: representación con datatypes.
@@ -14,24 +14,130 @@
 ;;   eliminar-termino  : polinomio x exponente -> polinomio
 ;;   sumar             : polinomio x polinomio -> polinomio
 
-(provide polinomio-cero insertar-termino coeficiente-de eliminar-termino sumar)
 
-(define polinomio-cero
-  (lambda (variable)
-    (eopl:error 'polinomio-cero "Sin implementar")))
 
-(define insertar-termino
-  (lambda (polinomio coeficiente exponente)
-    (eopl:error 'insertar-termino "Sin implementar")))
+;; DEFINICIÓN DE DATATYPES (TIPOS DE DATOS ABSTRACTOS Y SUS CONSTRUCTORES)
 
-(define coeficiente-de
-  (lambda (polinomio exponente)
-    (eopl:error 'coeficiente-de "Sin implementar")))
+;;-------------------------------------------------------
 
-(define eliminar-termino
-  (lambda (polinomio exponente)
-    (eopl:error 'eliminar-termino "Sin implementar")))
+;;expo-nat(k)
 
-(define sumar
-  (lambda (p q)
-    (eopl:error 'sumar "Sin implementar")))
+;; entero-positivo? : valor -> boolean
+;; Propósito: Predicado auxiliar que verifica si un valor es un entero mayor o igual a 0.
+
+(define entero-positivo?
+  (lambda (x)
+    (and (integer? x) (>= x 0))
+    )
+  )
+
+;; Datatype: exponente-tad
+;; Predicado: exponente-tad? : valor -> boolean
+;; Constructor:
+;;   expo-nat : integer (>=0) -> exponente-tad
+;; Propósito: Representa el exponente natural de un término dentro de la gramática.
+
+(define-datatype exponente-tad exponente-tad?
+  (expo-nat
+   (k entero-positivo?)
+   )
+  )
+
+;;--------------------------------------------------------
+
+;;coeficiente
+
+;; coef-ent(n)  coef-rac(num,den)
+
+;; Datatype: coeficiente-tad
+;; Predicado: coeficiente-tad? : valor -> boolean
+;; Constructores:
+;;   coef-ent : integer -> coeficiente-tad
+;;   coef-rac : integer x integer -> coeficiente-tad
+;; Propósito: Representa un coeficiente (ya sea entero o racional reducido) de un término.
+
+(define-datatype coeficiente-tad coeficiente-tad?
+  (coef-ent
+   (n integer?)
+   )
+  (coef-rac
+   (num integer?)
+   (den integer?)
+   )
+  )
+
+;;--------------------------------------------------------
+
+;;termino
+
+;;termino(coef, expo)
+
+;; Datatype: termino-tad
+;; Predicado: termino-tad? : valor -> boolean
+;; Constructor:
+;;   termino : coeficiente-tad x exponente-tad -> termino-tad
+;; Propósito: Representa un término individual compuesto por un coeficiente y un exponente.
+
+(define-datatype termino-tad termino-tad?
+  (termino
+   (coef coeficiente-tad?)
+   (expo exponente-tad?)
+   )
+  )
+
+;;--------------------------------------------------------
+
+;;terminos
+
+;;sin-terminos()  mas-terminos(term, resto)
+
+;; Datatype: terminos
+;; Predicado: terminos? : valor -> boolean
+;; Constructores:
+;;   sin-terminos : () -> terminos
+;;   mas-terminos : termino-tad x terminos -> terminos
+;; Propósito: Representa la estructura recursiva de la lista de términos de un polinomio.
+
+(define-datatype terminos terminos?
+  (sin-terminos)
+  (mas-terminos
+   (term termino-tad?)
+   (resto terminos?)
+   )
+ )
+;;--------------------------------------------------------
+
+;;variable
+;;nombre-var(s)
+
+;; Datatype: variable
+;; Predicado: variable? : valor -> boolean
+;; Constructor:
+;;   nombre-var : symbol -> variable
+;; Propósito: Representa la variable algebraica asociada al polinomio.
+
+(define-datatype variable variable?
+  (nombre-var
+   (s symbol?)
+   )
+ )
+
+;;--------------------------------------------------------
+
+;;polinomio
+;;poli(var,terms)
+
+;; Datatype: polinomio-tad
+;; Predicado: polinomio-tad? : valor -> boolean
+;; Constructor:
+;;   poli : variable x terminos -> polinomio-tad
+;; Propósito: Representa la estructura completa de un polinomio (variable y términos).
+
+(define-datatype polinomio-tad polinomio-tad?
+  (poli
+   (var variable?)
+   (terms terminos?)
+   )
+  )
+
+
