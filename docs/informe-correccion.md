@@ -1,221 +1,210 @@
-# Informe de corrección — Taller 1: polinomios dispersos
+# Informe de corrección — Taller 1: Un TAD con tres caras
 
-> **Plantilla de entrega.** Copie este archivo a
-> `docs/informe-correccion.md` dentro del repositorio del grupo y
-> reemplace los marcadores `{{...}}` con su contenido. **No elimine
-> las secciones obligatorias.** No se aceptan PDF, DOCX ni imágenes
-> insertadas: todo el documento debe ser Markdown, las fórmulas en
-> LaTeX (`$...$` / `$$...$$`) y los diagramas, si los hay, en Mermaid.
->
-> Las demostraciones se hacen una sola vez, sobre la estructura
-> recursiva que define la gramática, porque la lógica de las funciones
-> es la misma en las tres representaciones.
+**Autores:** Valentina Valencia Lopez (2459626), Aura Maria Pelaez Luna (2459422)
 
-**Curso:** Fundamentos de Interpretación y Compilación de Lenguajes
-de Programación — Universidad del Valle, Sede Tuluá.
+## 0. Notación y convenciones
 
-**Integrantes del grupo:**
+Un polinomio es $p = (v, T)$, con $v$ el nombre de la variable y $T$ la lista de términos. La lista de términos se define por la gramática:
 
-| Nombre | Código | Correo institucional |
-|--------|--------|----------------------|
-| {{Nombre 1}} | {{Código 1}} | {{correo1@correounivalle.edu.co}} |
-| {{Nombre 2}} | {{Código 2}} | {{correo2@correounivalle.edu.co}} |
+$$T ::= [\,] \;\mid\; t :: T'$$
 
----
+donde cada término es $t = (c, e)$ con coeficiente $c \in \mathbb{Q}$ y exponente $e \in \mathbb{N}$. Escribimos:
 
-## 1. Marco formal
+- $|T|$: longitud de la lista.
+- $\mathrm{exps}(T)$: conjunto de exponentes de $T$.
+- $\mathrm{terms}(T)$: conjunto de términos de $T$.
+- $e_0, c_0$: exponente y coeficiente del primer término cuando $T = (c_0, e_0) :: T'$.
 
-### 1.1 Corrección de programas recursivos
+### Invariante de la representación
 
-Sea $f : A \to B$ una función y $A$ un conjunto definido
-recursivamente. Sea $P_f$ un programa recursivo en Racket que pretende
-calcular $f$. Decimos que $P_f$ es correcto con respecto a su
-especificación si se cumple:
+$$\mathrm{Inv}(T) \iff \mathrm{Ord}(T) \wedge \mathrm{NoCero}(T) \wedge \mathrm{Nat}(T) \wedge \mathrm{Red}(T)$$
 
-$$
-\forall a \in A \,:\, P_f(a) = f(a)
-$$
+1. **Ord(T):** los exponentes son estrictamente decrecientes. Formalmente, $T = [\,]$, o $T = (c_0,e_0)::T'$ con $\forall e' \in \mathrm{exps}(T'),\; e_0 > e'$ y $\mathrm{Ord}(T')$.
+2. **NoCero(T):** $\forall (c,e) \in T,\; c \neq 0$.
+3. **Nat(T):** $\forall (c,e) \in T,\; e \in \mathbb{Z}$ y $e \ge 0$.
+4. **Red(T):** todo coeficiente racional $a/b$ cumple $b > 0$ y $\gcd(|a|, b) = 1$.
 
-La estrategia de demostración es **inducción estructural** sobre $A$.
-Aquí $A$ es el conjunto de listas de términos que genera la gramática:
+$\mathrm{Inv}(p)$ significa $\mathrm{Inv}(T)$ para la lista de términos de $p$.
 
-- **Caso base:** $a = \text{sin-terminos}()$, y se verifica
-  $P_f(a) = f(a)$ directamente.
-- **Caso inductivo:** $a = \text{mas-terminos}(t, r)$. Se asume la
-  **hipótesis de inducción** $P_f(r) = f(r)$ sobre el resto de la
-  lista y se demuestra $P_f(a) = f(a)$.
+### Lemas de apoyo
 
-Si alguna de sus funciones quedó escrita con un acumulador en lugar de
-recursión estructural, la corrección se argumenta con una invariante
-del acumulador y no con la hipótesis de inducción: enuncie la
-invariante, demuestre que vale al inicio, que cada paso la conserva y
-que al terminar implica la post-condición.
+**Lema 1 (las colas heredan el invariante).** Si $\mathrm{Inv}((c_0,e_0)::T')$, entonces $\mathrm{Inv}(T')$. Las cuatro condiciones son universales sobre los términos, y $T'$ tiene un subconjunto de esos términos.
 
-### 1.2 El invariante de la representación
+**Lema 2 (cota del primer término).** Si $\mathrm{Inv}((c_0,e_0)::T')$, entonces $\forall e' \in \mathrm{exps}(T'),\; e' < e_0$. Es la definición de $\mathrm{Ord}$.
 
-Las cuatro condiciones del enunciado se enuncian como una única
-propiedad sobre polinomios. Sea $p$ un polinomio con términos
-$t_1, t_2, \ldots, t_n$, donde $t_i = (c_i, e_i)$:
+**Lema 3 (aritmética exacta).** Sean $x, y$ racionales exactos de Racket. Entonces $x + y$ es un racional exacto. Además, `numerator` y `denominator` de un racional exacto de Racket devuelven $a, b$ con $b > 0$ y $\gcd(|a|,b)=1$. Por eso todo coeficiente construido con `(coef-ent n)` o `(coef-rac (numerator x) (denominator x))` cumple $\mathrm{Red}$.
 
-$$
-\mathrm{Inv}(p) \equiv
-\underbrace{\forall i < n : e_i > e_{i+1}}_{\text{orden estricto}}
-\ \land\
-\underbrace{\forall i : c_i \neq 0}_{\text{sin ceros}}
-\ \land\
-\underbrace{\forall i : e_i \in \mathbb{N}}_{\text{exponentes naturales}}
-\ \land\
-\underbrace{\forall i : \mathrm{red}(c_i)}_{\text{racionales reducidos}}
-$$
-
-donde $\mathrm{red}\left(\frac{a}{b}\right)$ abrevia
-$b > 0 \,\land\, \mathrm{mcd}(|a|, b) = 1$, y un coeficiente entero se
-toma como el racional de denominador $1$.
-
-{{Si prefiere escribir el invariante con otra notación, hágalo, pero
-las cuatro condiciones deben quedar todas y de forma que se puedan
-verificar término por término.}}
+**Decodificación de coeficientes.** En las funciones, `(coef-ent n)` se decodifica como $n$ y `(coef-rac num den)` como $num/den$. Esa decodificación es la inversa de la codificación del Lema 3, así que el coeficiente concreto que entra es el mismo que sale.
 
 ---
 
-## 2. Funciones analizadas
+## 1. Corrección de `coeficiente-de`
 
-### 2.1 Corrección de `coeficiente-de`
+### Especificación
 
-**Especificación.**
+- **Pre-condición:** $\mathrm{Inv}(p)$ con $p = (v,T)$, y $e$ es un entero con $e \ge 0$. (Si $e$ no es entero o es negativo, las guardas iniciales levantan error antes de recorrer la lista.)
+- **Post-condición:**
+  - Si $\exists c.\;(c,e) \in \mathrm{terms}(T)$, el resultado es ese $c$.
+  - Si $e \notin \mathrm{exps}(T)$, la función levanta error.
 
-- **Tipo:** `coeficiente-de : polinomio × exponente -> coeficiente`
-- **Pre-condición:** $\mathrm{Inv}(p)$ y {{condición sobre el
-  exponente consultado}}.
-- **Post-condición:** $\text{Post}(p, e, r) \equiv {{\ldots}}$ cuando
-  el exponente $e$ aparece en $p$; y la función levanta
-  `eopl:error` cuando no aparece.
+### Demostración por inducción estructural sobre $T$
 
-**Código.**
+Se demuestra $P(T)$: «para todo $e \in \mathbb{N}$ y todo $T$ con $\mathrm{Inv}(T)$, la función cumple la post-condición».
 
-```racket
-; coeficiente-de : {{contrato}}
-; Propósito: {{...}}
-(define (coeficiente-de p e)
-  ...)
-```
+**Caso base, $T = [\,]$.** No existe ningún término, luego $e \notin \mathrm{exps}([\,])$. La función cae en la rama `sin-terminos` y levanta el error «No hay términos para consultar su coeficiente». La post-condición se cumple.
 
-**Demostración.**
+**Paso inductivo, $T = (c_0,e_0) :: T'$.** Se asume $P(T')$ como hipótesis de inducción (HI), aplicable por el Lema 1. Se comparan $e$ y $e_0$, y hay tres casos exhaustivos y excluyentes:
 
-- **Caso base** ($\text{sin-terminos}$): {{qué hace el programa y por
-  qué eso es exactamente levantar el error.}}
+- **Caso A, $e = e_0$.** El término $(c_0,e_0)$ tiene el exponente buscado y la función retorna $c_0$ decodificado. Por $\mathrm{Ord}$ no hay otro término con el mismo exponente, así que $c_0$ es el único coeficiente posible. Se cumple la post-condición.
+- **Caso B, $e < e_0$.** Como $e \ne e_0$, se cumple $e \in \mathrm{exps}(T) \iff e \in \mathrm{exps}(T')$. La función llama a `coeficiente-de` sobre $(v,T')$ con el mismo $e$. Por la HI, si $e \in \mathrm{exps}(T')$ devuelve su coeficiente, que es el de $T$. Si $e \notin \mathrm{exps}(T')$, levanta error, y en ese caso $e \notin \mathrm{exps}(T)$. Se cumple la post-condición.
+- **Caso C, $e > e_0$.** Por el Lema 2, todo $e' \in \mathrm{exps}(T')$ cumple $e' < e_0 < e$. Luego $e \notin \mathrm{exps}(T)$, y la función levanta el error «El polinomio no tiene término con ese exponente». Se cumple la post-condición. Este caso es la razón por la que no hace falta recorrer toda la lista: el orden garantiza que el exponente ya no puede aparecer.
 
-  $$
-  {{\ldots}}
-  $$
+Por inducción estructural, $P(T)$ vale para toda lista $T$ con $\mathrm{Inv}(T)$. $\blacksquare$
 
-- **Caso inductivo** ($\text{mas-terminos}(t, r)$): distinga los tres
-  subcasos según la comparación entre el exponente de $t$ y el
-  exponente buscado. {{Uno de ellos usa la hipótesis de inducción
-  sobre $r$; explique por qué el orden estricto del invariante permite
-  cortar la búsqueda sin recorrer el resto de la lista.}}
+### Terminación
 
-  $$
-  {{\ldots}}
-  $$
+Medida: $\mu(T) = |T| \in \mathbb{N}$.
 
-- **Levantamiento del error.** Demuestre que el error se levanta
-  cuando el exponente no está y **solo** en ese caso.
+- La única llamada recursiva (Caso B) se hace sobre $T'$, con $\mu(T') = \mu(T) - 1 < \mu(T)$.
+- Los casos base, $T=[\,]$ (error), A (retorno) y C (error), no hacen llamadas recursivas.
 
-- **Terminación.** {{Medida que decrece estrictamente en cada llamada
-  y cota inferior.}}
-
-**Conclusión:** {{...}}
+Como $\mathbb{N}$ es bien fundado, no existe una cadena infinita decreciente y la función termina. Además, en cada llamada se examina un solo término, así que la lista se recorre a lo sumo una vez: $O(|T|)$.
 
 ---
 
-### 2.2 Corrección de `eliminar-termino`
+## 2. Corrección de `eliminar-termino`
 
-**Especificación.**
+### Especificación
 
-- **Tipo:** `eliminar-termino : polinomio × exponente -> polinomio`
-- **Pre-condición:** $\mathrm{Inv}(p)$ y {{...}}.
-- **Post-condición:** el resultado contiene **exactamente** los
-  términos de $p$ menos el de exponente $e$. Formalmente:
-  $$
-  \text{terminos}(r) = \text{terminos}(p) \setminus \{{\ldots}\}
-  $$
-  y la función levanta `eopl:error` si $e$ no aparece en $p$.
+- **Pre-condición:** $\mathrm{Inv}(p)$ con $p = (v,T)$, y $e$ es un entero con $e \ge 0$.
+- **Post-condición:**
+  - Si $e \in \mathrm{exps}(T)$, el resultado es $(v,R)$ con $\mathrm{terms}(R) = \mathrm{terms}(T) \setminus \{(c,e)\}$, donde $(c,e)$ es el único término de $T$ con exponente $e$. Además $R$ conserva el orden relativo de $T$ y $\mathrm{Inv}(R)$.
+  - Si $e \notin \mathrm{exps}(T)$, la función levanta error.
 
-**Código.**
+### Demostración por inducción estructural sobre $T$
 
-```racket
-(define (eliminar-termino p e)
-  ...)
-```
+**Caso base, $T = [\,]$.** No hay término con exponente $e$. La función levanta el error «No hay términos para eliminar». Se cumple la post-condición.
 
-**Demostración.** Siga el esquema de 2.1: caso base, caso inductivo
-con hipótesis de inducción, error y terminación. {{Además de la
-igualdad de conjuntos de términos, argumente que el resultado sigue
-cumpliendo $\mathrm{Inv}$: quitar un término no rompe el orden
-estricto ni introduce ceros.}}
+**Paso inductivo, $T = (c_0,e_0) :: T'$.** HI: la post-condición vale para $T'$ (es válida por el Lema 1).
 
----
+- **Caso A, $e = e_0$.** La función retorna $(v,T')$. Por $\mathrm{Ord}$ el término $(c_0,e_0)$ es el único con exponente $e$, y por tanto $\mathrm{terms}(T') = \mathrm{terms}(T) \setminus \{(c_0,e_0)\}$. El orden de $T'$ es el de $T$ sin su primer elemento, y $\mathrm{Inv}(T')$ vale por el Lema 1.
+- **Caso B, $e < e_0$.** Como $e \neq e_0$, $e \in \mathrm{exps}(T) \iff e \in \mathrm{exps}(T')$.
+  - *Si $e \in \mathrm{exps}(T')$:* por la HI la llamada recursiva retorna $(v,R')$ con $\mathrm{terms}(R') = \mathrm{terms}(T') \setminus \{(c,e)\}$ y $\mathrm{Inv}(R')$. La función retorna $(v, (c_0,e_0) :: R')$, y:
+    - **Contenido:** $\mathrm{terms}((c_0,e_0)::R') = \{(c_0,e_0)\} \cup (\mathrm{terms}(T') \setminus \{(c,e)\}) = \mathrm{terms}(T) \setminus \{(c,e)\}$. Esto vale porque $(c_0,e_0) \neq (c,e)$ ya que $e_0 \neq e$.
+    - **Orden:** $\mathrm{exps}(R') \subseteq \mathrm{exps}(T')$, y por el Lema 2 todos son menores que $e_0$. Con $\mathrm{Ord}(R')$ se obtiene $\mathrm{Ord}((c_0,e_0)::R')$.
+    - **Resto del invariante:** NoCero, Nat y Red se cumplen porque los términos son un subconjunto de los de $T$.
+  - *Si $e \notin \mathrm{exps}(T')$:* por la HI la llamada recursiva levanta error, y ese error se propaga. Es correcto, porque entonces $e \notin \mathrm{exps}(T)$.
+- **Caso C, $e > e_0$.** Igual que en el Caso C de la sección 1: $e \notin \mathrm{exps}(T)$ y la función levanta el error «El polinomio no tiene término con ese exponente».
 
-### 2.3 `insertar-termino` preserva el invariante
+Por inducción estructural la post-condición vale para toda $T$ con $\mathrm{Inv}(T)$. $\blacksquare$
 
-**Enunciado.** Si $\mathrm{Inv}(p)$ vale antes de la llamada, entonces
-$\mathrm{Inv}(\texttt{insertar-termino}(p, c, e))$ vale sobre el
-resultado.
+### Terminación
 
-**Código.**
-
-```racket
-(define (insertar-termino p c e)
-  ...)
-```
-
-**Demostración por casos.** Cubra los tres casos del enunciado y
-verifique en cada uno las cuatro condiciones del invariante:
-
-- **Caso A — el exponente es nuevo.** {{Dónde queda el término
-  insertado y por qué el orden estricto se conserva. Qué pasa si el
-  coeficiente que llega es cero.}}
-
-- **Caso B — el exponente ya existía y la suma no es cero.** {{El
-  término se reemplaza por uno con el coeficiente sumado; el orden no
-  cambia porque el exponente es el mismo. Argumente que el coeficiente
-  resultante queda reducido y con denominador positivo.}}
-
-- **Caso C — el exponente ya existía y la suma es cero.** {{El término
-  desaparece. Argumente que quitarlo conserva el orden estricto y que
-  el resultado no queda con un cero, que es justo lo que exige la
-  segunda condición.}}
-
-**Terminación.** {{...}}
-
-**Conclusión:** {{...}}
+Medida $\mu(T) = |T|$. La única llamada recursiva (Caso B) es sobre $T'$, con $\mu(T') = \mu(T) - 1$. Los demás casos no recursivan, así que la función termina. Se examina un término por llamada, por lo que la lista se recorre a lo sumo una vez.
 
 ---
 
-## 3. Equivalencia de las dos representaciones
+## 3. `insertar-termino` preserva el invariante
 
-Argumente por qué las funciones de la interfaz son las mismas para la
-representación basada en listas y la basada en procedimientos, y qué
-propiedad de la interfaz impide que el cliente las distinga. Basta una
-explicación conceptual apoyada en la sección 2.2 de EOPL, sin
-demostración formal.
+### Especificación
 
-Conviene que la explicación responda a esto:
+- **Pre-condición:** $\mathrm{Inv}(p)$ con $p=(v,T)$, $e \in \mathbb{N}$ y $c$ un racional exacto.
+- **Post-condición:** $\mathrm{Inv}(p')$ con $p' = \texttt{insertar-termino}(p,c,e)$. Además:
+  - Si $e \notin \mathrm{exps}(T)$ y $c \ne 0$, el resultado añade $(c,e)$ a $T$.
+  - Si $e = e_k \in \mathrm{exps}(T)$ con coeficiente $c_k$, el término $(c_k, e_k)$ pasa a $(c_k + c, e_k)$, o desaparece si $c_k + c = 0$.
 
-- {{Qué ve el cliente de un polinomio: qué operaciones tiene
-  disponibles y qué no puede hacer.}}
-- {{Qué cambia entre las dos representaciones y por qué ese cambio
-  queda del lado de adentro de la interfaz.}}
-- {{Qué habría que hacer para que el cliente sí notara la diferencia,
-  y por qué eso significaría que la abstracción se rompió.}}
+### Caso previo: $c = 0$
+
+La función retorna $p$ sin cambios (guarda explícita), y $\mathrm{Inv}(p)$ se cumple por hipótesis. De aquí en adelante, $c \neq 0$. Las guardas de error (exponente no entero, negativo o coeficiente inexacto) no retornan ningún polinomio, así que no pueden violar el invariante.
+
+### Lema auxiliar (sobre la lista de términos)
+
+Sea $R = \mathrm{ins}(T,c,e)$ la lista resultante. Se demuestra por inducción sobre $|T|$ la afirmación reforzada:
+
+$$Q(T):\quad \mathrm{Inv}(T) \Rightarrow \mathrm{Inv}(R) \;\wedge\; \mathrm{exps}(R) \subseteq \mathrm{exps}(T) \cup \{e\}$$
+
+**Caso base, $T = [\,]$ (exponente nuevo).** $R = [(c,e)]$.
+
+- Ord: hay un solo término, así que se cumple trivialmente.
+- NoCero: $c \neq 0$.
+- Nat: $e \in \mathbb{N}$ por la pre-condición.
+- Red: $c$ se construye como `(coef-ent c)` si es entero, o `(coef-rac (numerator c) (denominator c))` si no, y por el Lema 3 está reducido.
+- $\mathrm{exps}(R) = \{e\}$, luego se cumple la segunda parte.
+
+**Paso inductivo, $T = (c_0,e_0)::T'$.** HI: $Q(T')$. Hay cuatro casos:
+
+- **Caso 1: exponente nuevo, $e > e_0$.** $R = (c,e) :: T$.
+  - Ord: por $\mathrm{Ord}(T)$ y $e > e_0 > e'$ para todo $e' \in \mathrm{exps}(T')$, el nuevo primer término tiene exponente mayor que todos los demás.
+  - NoCero: $c \ne 0$ y los demás términos no cambian.
+  - Nat, Red: igual que en el caso base para el término nuevo. Los demás no cambian.
+  - $\mathrm{exps}(R) = \mathrm{exps}(T) \cup \{e\}$.
+- **Caso 2: exponente ya existía y la suma no es cero, $e = e_0$ y $s = c_0 + c \neq 0$.** $R = (s,e_0) :: T'$.
+  - Ord: el exponente del primer término no cambia, así que sigue siendo mayor que todos los de $T'$ (Lema 2). $\mathrm{Ord}(T')$ vale por el Lema 1.
+  - NoCero: $s \neq 0$ por la condición del caso.
+  - Red: $s$ es un racional exacto (Lema 3) y se reconstruye con `numerator` y `denominator`, así que queda reducido.
+  - Nat: $e_0$ no cambia.
+  - $\mathrm{exps}(R) = \mathrm{exps}(T)$.
+- **Caso 3: exponente ya existía y la suma es cero, $e = e_0$ y $c_0 + c = 0$.** $R = T'$. Por el Lema 1, $\mathrm{Inv}(T')$ vale. Además, $\mathrm{exps}(R) \subseteq \mathrm{exps}(T)$.
+- **Caso 4: $e < e_0$ (se sigue buscando).** $R = (c_0,e_0) :: R'$ con $R' = \mathrm{ins}(T',c,e)$. Por el Lema 1, la HI es aplicable:
+  - Por la HI, $\mathrm{Inv}(R')$ y $\mathrm{exps}(R') \subseteq \mathrm{exps}(T') \cup \{e\}$.
+  - Ord: los elementos de $\mathrm{exps}(T')$ son menores que $e_0$ (Lema 2) y además $e < e_0$ (condición del caso). Por tanto, todos los elementos de $\mathrm{exps}(R')$ son menores que $e_0$. Con $\mathrm{Ord}(R')$ se obtiene $\mathrm{Ord}(R)$.
+  - NoCero, Nat, Red: el término $(c_0,e_0)$ ya los cumplía, y $R'$ los cumple por la HI.
+  - $\mathrm{exps}(R) \subseteq \mathrm{exps}(T) \cup \{e\}$.
+
+Los cuatro casos cubren todas las posibilidades al comparar $e$ con $e_0$. Los tres casos que pide el taller (exponente nuevo, exponente existente con suma no nula, exponente existente con suma nula) corresponden a los Casos 1 (y al caso base), 2 y 3. El Caso 4 solo desciende por la lista hasta llegar a uno de ellos. $\blacksquare$
+
+### Terminación
+
+Medida $|T|$. La llamada recursiva del Caso 4 es sobre $T'$ con $|T'| = |T| - 1$. Los demás casos no recursivan. La lista se recorre una sola vez y no se ordena al final, porque el término se coloca en su posición correcta al encontrarla.
+
+### Representación con datatypes
+
+En `polinomios-datatypes.rkt`, `insertar-termino` construye el polinomio de un solo término $(v,[(c,e)])$ y lo combina con `sumar`. Ese polinomio cumple $\mathrm{Inv}$ (mismo argumento del caso base). Por tanto, el resultado preserva el invariante si `sumar` lo preserva, como se muestra a continuación.
+
+**`sumar` preserva el invariante.** Sean $\mathrm{Inv}(T_P)$ y $\mathrm{Inv}(T_Q)$. Se demuestra por inducción sobre $|T_P| + |T_Q|$ que el resultado $S$ cumple $\mathrm{Inv}(S)$ y $\mathrm{exps}(S) \subseteq \mathrm{exps}(T_P) \cup \mathrm{exps}(T_Q)$:
+
+- Si alguna de las dos listas es vacía, se retorna la otra, que cumple $\mathrm{Inv}$.
+- Si $k_P > k_Q$, se retorna $t_P :: \mathrm{sumar}(R_P, T_Q)$. Los exponentes de $R_P$ son menores que $k_P$ (Lema 2) y los de $T_Q$ son $\le k_Q < k_P$. Por eso el primer término sigue siendo mayor que todos los del resto.
+- Si $k_P < k_Q$, el argumento es simétrico.
+- Si $k_P = k_Q$ y la suma de coeficientes es distinta de cero, se retorna un término con ese exponente y esa suma, seguido de la suma de las colas. Las colas tienen exponentes menores que $k_P$, y el coeficiente queda reducido por el Lema 3.
+- Si $k_P = k_Q$ y la suma es cero, el término desaparece y se retorna la suma de las colas, que cumple $\mathrm{Inv}$ por la HI.
+
+En todos los casos la medida $|T_P|+|T_Q|$ decrece estrictamente (en uno o en dos), así que termina. $\blacksquare$
 
 ---
 
-## 4. Referencias
+## 4. Equivalencia de las representaciones con listas y con procedimientos
 
-- Friedman, D. P., & Wand, M. *Essentials of Programming Languages*,
-  3.ª ed., MIT Press, 2008. Sección 2.1 (especificación de datos),
-  sección 2.2 (representación basada en listas y basada en
-  procedimientos), sección 2.4 (`define-datatype` y `cases`).
-- {{Otras referencias que hayan consultado.}}
+### Por qué las funciones son las mismas
+
+Las funciones `polinomio-cero`, `insertar-termino`, `coeficiente-de` y `eliminar-termino` están escritas exclusivamente en términos de la **interfaz** del TAD:
+
+- **Constructores:** `poli`, `nombre-var`, `sin-terminos`, `mas-terminos`, `termino`, `coef-ent`, `coef-rac`, `expo-nat`.
+- **Predicados:** `sin-terminos?`, `coef-ent?`, etc.
+- **Extractores:** `poli->var`, `poli->terms`, `mas-terminos->term`, `mas-terminos->resto`, `termino->coef`, `termino->expo`, `coef-ent->n`, `coef-rac->num`, `coef-rac->den`, `expo-nat->k`.
+
+Ninguna de ellas usa `car`, `cdr` ni aplica un dato como procedimiento: nunca inspeccionan cómo está construido un dato. Por eso el texto de las cuatro funciones es idéntico en `polinomios-listas.rkt` y en `polinomios-procedimientos.rkt`. Solo cambian las definiciones de los constructores y observadores.
+
+### Qué propiedad hace que el cliente no pueda distinguirlas
+
+Es la propiedad de **independencia de la representación** (sección 2.2 de EOPL). Las dos representaciones cumplen las mismas ecuaciones de la especificación, por ejemplo:
+
+$$\texttt{poli->var}(\texttt{poli}(v,t)) = v \qquad \texttt{mas-terminos->resto}(\texttt{mas-terminos}(t,r)) = r$$
+
+$$\texttt{sin-terminos?}(\texttt{sin-terminos}()) = \texttt{\#t}$$
+
+En las listas, `(poli v t)` es `(list 'poli v t)` y los extractores son `cadr` y `caddr`. En los procedimientos, `(poli v t)` es una clausura que responde a los mensajes `'var` y `'terms`. Para cada dato hay una correspondencia entre ambos valores, y todos los observadores devuelven el mismo resultado sobre datos correspondientes. Un programa cliente que solo usa la interfaz solo puede observar lo que dicen esas ecuaciones, por lo que produce los mismos resultados en una u otra representación, y no puede saber cuál está usando.
+
+Hay una única excepción: lo que imprime el intérprete al mostrar un dato (una lista en un caso, un procedimiento opaco en el otro). Esa salida no forma parte de la interfaz, y es justamente el «secreto» que el TAD oculta. Este es el sentido del lema del taller: *«la representación es un secreto que el cliente no necesita»*.
+
+### Relación con la representación con datatypes
+
+La tercera representación usa `define-datatype` y `cases` en lugar de predicados y extractores, por lo que el texto de sus funciones es distinto. La especificación, el invariante y las demostraciones de las secciones 1 a 3 siguen siendo válidos, porque solo dependen de la estructura recursiva definida por la gramática y no de cómo se almacena.
+
+---
+
+## 5. Conclusión
+
+- `coeficiente-de` y `eliminar-termino` son correctos respecto a su especificación y terminan, con la medida $|T|$ como función decreciente.
+- `insertar-termino` preserva el invariante $\mathrm{Inv}$ en los tres casos (exponente nuevo, suma no nula, suma nula). En la versión con datatypes esto se apoya en que `sumar` también lo preserva.
+- Las versiones con listas y con procedimientos son intercambiables para el cliente porque las funciones solo usan la interfaz.an consultado.}}
