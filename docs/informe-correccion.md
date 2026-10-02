@@ -26,13 +26,13 @@ $$\mathrm{Inv}(T) \iff \mathrm{Ord}(T) \wedge \mathrm{NoCero}(T) \wedge \mathrm{
 
 $\mathrm{Inv}(p)$ significa $\mathrm{Inv}(T)$ para la lista de términos de $p$.
 
-### Lemas de apoyo
+### Propiedades auxiliares
 
-**Lema 1 (las colas heredan el invariante).** Si $\mathrm{Inv}((c_0,e_0)::T')$, entonces $\mathrm{Inv}(T')$. Las cuatro condiciones son universales sobre los términos, y $T'$ tiene un subconjunto de esos términos.
+**1 (las colas heredan el invariante).** Si $\mathrm{Inv}((c_0,e_0)::T')$, entonces $\mathrm{Inv}(T')$. Las cuatro condiciones son universales sobre los términos, y $T'$ tiene un subconjunto de esos términos.
 
-**Lema 2 (cota del primer término).** Si $\mathrm{Inv}((c_0,e_0)::T')$, entonces $\forall e' \in \mathrm{exps}(T'),\; e' < e_0$. Es la definición de $\mathrm{Ord}$.
+**2 (cota del primer término).** Si $\mathrm{Inv}((c_0,e_0)::T')$, entonces $\forall e' \in \mathrm{exps}(T'),\; e' < e_0$. Es la definición de $\mathrm{Ord}$.
 
-**Lema 3 (aritmética exacta).** Sean $x, y$ racionales exactos de Racket. Entonces $x + y$ es un racional exacto. Además, `numerator` y `denominator` de un racional exacto de Racket devuelven $a, b$ con $b > 0$ y $\gcd(|a|,b)=1$. Por eso todo coeficiente construido con `(coef-ent n)` o `(coef-rac (numerator x) (denominator x))` cumple $\mathrm{Red}$.
+**3 (aritmética exacta).** Sean $x, y$ racionales exactos de Racket. Entonces $x + y$ es un racional exacto. Además, `numerator` y `denominator` de un racional exacto de Racket devuelven $a, b$ con $b > 0$ y $\gcd(|a|,b)=1$. Por eso todo coeficiente construido con `(coef-ent n)` o `(coef-rac (numerator x) (denominator x))` cumple $\mathrm{Red}$.
 
 **Decodificación de coeficientes.** En las funciones, `(coef-ent n)` se decodifica como $n$ y `(coef-rac num den)` como $num/den$. Esa decodificación es la inversa de la codificación del Lema 3, así que el coeficiente concreto que entra es el mismo que sale.
 
@@ -191,7 +191,7 @@ Es la propiedad de **independencia de la representación** (sección 2.2 de EOPL
 
 $$\texttt{poli->var}(\texttt{poli}(v,t)) = v \qquad \texttt{mas-terminos->resto}(\texttt{mas-terminos}(t,r)) = r$$
 
-$$\texttt{sin-terminos?}(\texttt{sin-terminos}()) = \texttt{\#t}$$
+$$\texttt{sin-terminos?}(\texttt{sin-terminos}()) = \text{verdadero}$$
 
 En las listas, `(poli v t)` es `(list 'poli v t)` y los extractores son `cadr` y `caddr`. En los procedimientos, `(poli v t)` es una clausura que responde a los mensajes `'var` y `'terms`. Para cada dato hay una correspondencia entre ambos valores, y todos los observadores devuelven el mismo resultado sobre datos correspondientes. Un programa cliente que solo usa la interfaz solo puede observar lo que dicen esas ecuaciones, por lo que produce los mismos resultados en una u otra representación, y no puede saber cuál está usando.
 
