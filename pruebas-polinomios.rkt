@@ -123,3 +123,80 @@
 ;; -----------------------------------------------------------------------------
 
 
+;; 3. PRUEBAS: REPRESENTACIÓN BASADA EN DATATYPES
+;; -----------------------------------------------------------------------------
+
+(define p-dt-base
+  (dt:insertar-termino
+   (dt:insertar-termino
+    (dt:insertar-termino (dt:polinomio-cero 'x) 7 0)
+    -3/2 2)
+   4 5))
+
+;; 3.1 Casos funcionales de las 4 operaciones
+(check-true (dt:polinomio-tad? (dt:polinomio-cero 'x)))
+(check-equal? (dt:coeficiente-de p-dt-base 5) 4)
+(check-equal? (dt:coeficiente-de p-dt-base 2) -3/2)
+(check-equal? (dt:coeficiente-de p-dt-base 0) 7)
+
+;; 3.2 Polinomio nulo como caso base
+(define p-nulo-dt (dt:polinomio-cero 'x))
+(check-equal? (dt:coeficiente-de (dt:insertar-termino p-nulo-dt 3 1) 1) 3)
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-nulo-dt 0)))
+(check-exn exn:fail? (lambda () (dt:eliminar-termino p-nulo-dt 0)))
+
+;; 3.3 Inserción que cancela un término existente
+(define p-dt-cancelado (dt:insertar-termino p-dt-base 3/2 2))
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-dt-cancelado 2)))
+
+;; 3.4 Inserción con coeficiente 0
+(check-equal? (dt:insertar-termino p-dt-base 0 3) p-dt-base)
+
+;; 3.5 eliminar-termino: caso funcional
+(define p-dt-sin-2 (dt:eliminar-termino p-dt-base 2))
+(check-equal? (dt:coeficiente-de p-dt-sin-2 5) 4)
+(check-equal? (dt:coeficiente-de p-dt-sin-2 0) 7)
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-dt-sin-2 2)))
+
+;; 3.6 insertar-termino: sumar sobre exponente existente y exponente nuevo
+(check-equal? (dt:coeficiente-de (dt:insertar-termino p-dt-base 1 2) 2) -1/2)
+(check-equal? (dt:coeficiente-de (dt:insertar-termino p-dt-base 2 3) 3) 2)
+
+;; 3.7 Los casos de error
+(check-exn exn:fail? (lambda () (dt:insertar-termino p-dt-base 5 -1)))
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-dt-base 3)))
+(check-exn exn:fail? (lambda () (dt:eliminar-termino p-dt-base 3)))
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-dt-base -2)))
+(check-exn exn:fail? (lambda () (dt:eliminar-termino p-dt-base -3)))
+(check-exn exn:fail? (lambda () (dt:insertar-termino p-dt-base 3.5 2)))
+
+;; 3.8 Pruebas específicas para la función sumar
+(define p1 (dt:insertar-termino (dt:insertar-termino (dt:polinomio-cero 'x) 3 2) 4 1))
+(define p2 (dt:insertar-termino (dt:insertar-termino (dt:polinomio-cero 'x) -3 2) -4 1))
+(define p-distinta-var (dt:insertar-termino (dt:polinomio-cero 'y) 2 1))
+
+;; Suma de dos polinomios que se cancelan por completo (debe dar el polinomio nulo)
+(define p-suma-cancelada (dt:sumar p1 p2))
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-suma-cancelada 2)))
+(check-exn exn:fail? (lambda () (dt:coeficiente-de p-suma-cancelada 1)))
+
+;; Suma de polinomios con diferentes variables (debe lanzar error)
+(check-exn exn:fail? (lambda () (dt:sumar p1 p-distinta-var)))
+
+;; Suma no trivial: el ejemplo del enunciado, p + q = -x^2 + 2x + 7
+(define q-dt
+  (dt:insertar-termino
+   (dt:insertar-termino
+    (dt:insertar-termino (dt:polinomio-cero 'x) -4 5)
+    1/2 2)
+   2 1))
+(define s-dt (dt:sumar p-dt-base q-dt))
+(check-equal? (dt:coeficiente-de s-dt 2) -1)
+(check-equal? (dt:coeficiente-de s-dt 1) 2)
+(check-equal? (dt:coeficiente-de s-dt 0) 7)
+(check-exn exn:fail? (lambda () (dt:coeficiente-de s-dt 5)))   ; x^5 se canceló
+
+;; Sumar con el polinomio nulo no cambia nada
+(define s-cero (dt:sumar p-dt-base (dt:polinomio-cero 'x)))
+(check-equal? (dt:coeficiente-de s-cero 5) 4)
+(check-equal? (dt:coeficiente-de s-cero 0) 7)
