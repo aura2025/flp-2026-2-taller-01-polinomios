@@ -141,3 +141,278 @@
   )
 
 
+;;--------------------------------------------------------
+
+(provide polinomio-cero insertar-termino coeficiente-de eliminar-termino sumar polinomio-tad?)
+
+;; polinomio-cero : symbol -> polinomio
+;; Recibe un símbolo (el nombre de la variable) y retorna el polinomio nulo
+;; (sin términos) en esa variable.
+(define polinomio-cero
+  (lambda (variable)
+    (poli (nombre-var variable) (sin-terminos))
+    )
+  )
+
+;; insertar-termino : polinomio x coeficiente x exponente -> polinomio
+;; Recibe un polinomio, un coeficiente concreto y un exponente concreto.
+;; Construye un polinomio de un solo término con ese coeficiente y exponente,
+;; y lo combina con el original usando sumar. Genera un error si el exponente
+;; es negativo, no es entero, o el coeficiente no es un número exacto.
+(define insertar-termino
+  (lambda (polinomio coeficiente exponente)
+     (cond
+      ;; ERROR: el exponente debe ser un numero entero
+      [(not (integer? exponente))
+       (eopl:error 'insertar-termino
+                   "El exponente debe ser un numero entero")]
+
+      ;; ERROR: el exponente no puede ser negativo
+      [(< exponente 0)
+       (eopl:error 'insertar-termino
+                   "El exponente no puede ser negativo")]
+      
+       ;; ERROR: el coeficiente no puede ser un numero no exacto
+      [(not (and(rational? coeficiente)(exact? coeficiente)))
+       (eopl:error 'insertar-termino
+                   "El coeficiente debe ser un numero exacto")]
+      
+       [(= coeficiente 0)
+       polinomio]
+       
+      
+      [else
+       (cases polinomio-tad polinomio
+         (poli (var terms)
+              (sumar polinomio
+                     (poli var
+                           (mas-terminos
+                            (termino(if(integer? coeficiente)
+                                       (coef-ent coeficiente)
+                                       (coef-rac (numerator coeficiente) (denominator coeficiente)))
+                                    (expo-nat exponente))
+                            (sin-terminos))))))])))
+                                                       
+                                                         
+;; coeficiente-de : polinomio x exponente -> coeficiente
+;; Recibe un polinomio y un exponente concreto, y retorna el coeficiente
+;; concreto del término con ese exponente. Genera un error si el exponente
+;; no es válido o si el polinomio no tiene término con ese exponente.                                                                                         
+(define coeficiente-de
+  (lambda (polinomio exponente)
+    (cond
+      ;; ERROR: el exponente debe ser un numero entero
+      [(not (integer? exponente))
+       (eopl:error 'coeficiente-de
+                   "El exponente debe ser un numero entero")]
+
+      ;; ERROR: el exponente no puede ser negativo
+      [(< exponente 0)
+       (eopl:error 'coeficiente-de
+                   "El exponente no puede ser negativo")]
+      
+       
+      
+      [else(cases polinomio-tad polinomio
+         (poli (var terms)  (cases terminos terms
+                   ;;Lista de terminos vacia
+                   (sin-terminos()(eopl:error 'coeficiente-de "No hay terminos para consultar su coeficiente"))
+                   (mas-terminos(termPrimero resto)
+                           (cases termino-tad termPrimero
+                              (termino(coefPrimero expoPrimero)
+                                      (let* ([expoSuelto (cases exponente-tad expoPrimero
+                                                            (expo-nat (k) k))]
+                                             [coefSuelto (cases coeficiente-tad coefPrimero
+                                                            (coef-ent (n) n)
+                                                             (coef-rac (num den) (/ num den)))])
+   
+          
+
+                  (cond
+                    ;;;CASO A: El exponente es igual al exponente del primer termino
+                    [(= exponente expoSuelto)  coefSuelto ]
+                    ;;;CASO B: El exponente es menor al exponente del primer termino
+                    [(< exponente expoSuelto) (coeficiente-de(poli var resto) exponente)]
+                    ;;;CASO C: El exponente es mayor al exponente del primer termino
+                    [(> exponente expoSuelto) (eopl:error 'coeficiente-de "El polinomio no tiene termino con ese exponente")]))))))))])))
+                   
+             
+      
+           
+                                     
+
+
+;; eliminar-termino : polinomio x exponente -> polinomio
+;; Recibe un polinomio y un exponente concreto, y retorna un polinomio
+;; nuevo sin el término de ese exponente. Genera un error si el exponente
+;; no es válido o si el término no existe.
+(define eliminar-termino
+  (lambda (polinomio exponente)
+(cond
+      ;; ERROR: el exponente debe ser un numero entero
+      [(not (integer? exponente))
+       (eopl:error 'eliminar-termino
+                   "El exponente debe ser un numero entero")]
+
+      ;; ERROR: el exponente no puede ser negativo
+      [(< exponente 0)
+       (eopl:error 'eliminar-termino
+                   "El exponente no puede ser negativo")]
+      
+       
+      
+      [else(cases polinomio-tad polinomio
+         (poli (var terms)  (cases terminos terms
+                   ;;CASO A: Lista de terminos vacia
+                   (sin-terminos()(eopl:error 'eliminar-termino "No hay terminos para eliminar"))
+                   (mas-terminos(termPrimero resto)
+                           (cases termino-tad termPrimero
+                              (termino(coefPrimero expoPrimero)
+                                      (let* ([expoSuelto (cases exponente-tad expoPrimero
+                                                            (expo-nat (k) k))])
+                                             
+   
+                 
+                  (cond
+                  ;;;CASO B: El exponente del termino a eliminar es igual al exponente del primer termino
+                   [(= exponente expoSuelto) (poli var resto)]
+                  ;;;CASO C:  El exponente del termino a eliminar es menor al exponente del primer termino
+                   [(< exponente expoSuelto) (cases polinomio-tad (eliminar-termino (poli var resto) exponente)
+                                                                         (poli (varRec termsRec) (poli var (mas-terminos termPrimero termsRec))))]
+
+                  ;;;CASO D: El exponente del termino a eliminar es mayor al exponente del primer termino
+                   [(> exponente expoSuelto) (eopl:error 'eliminar-termino "El polinomio no tiene termino con ese exponente")]))))))))])))
+
+
+;; sumar : polinomio x polinomio -> polinomio
+;; Recibe dos polinomios en la misma variable, y retorna su suma. Los
+;; términos con exponentes iguales se combinan sumando coeficientes, y los
+;; que se cancelan desaparecen del resultado. Recorre las dos listas de
+;; términos en paralelo, una sola vez. Genera un error si los polinomios
+;; no están en la misma variable.           
+(define sumar
+  (lambda (p q)
+    (cases polinomio-tad p
+      (poli(varP termsP)
+        (cases polinomio-tad q
+          (poli(varQ termsQ)
+
+              ;;Verificacion de igual variable
+               (cond[(not(eq? (cases variable varP ( nombre-var(s) s)) 
+                              (cases variable varQ ( nombre-var(s) s))))
+                     (eopl:error 'sumar "Los polinomios deben estar en la misma variable")]
+                    ;; sumar terminos 
+                    [else
+                    ;;funcion local sumar-terminos
+                     (letrec
+                         ([sumar-terminos
+                           (lambda (termsP termsQ)
+
+                             (cases terminos termsP
+                               (sin-terminos() termsQ)
+                               (mas-terminos( termP restoP)
+                                    (cases terminos termsQ
+                                      (sin-terminos() termsP)
+                                       (mas-terminos( termQ restoQ)
+                                                    (cases termino-tad termP
+                                                      (termino (coefP expoP)
+                                                          (cases termino-tad termQ
+                                                            (termino (coefQ expoQ)
+                                                              (let([ kP  (cases exponente-tad expoP (expo-nat(k) k))]
+                                                                   [ kQ (cases exponente-tad expoQ (expo-nat(k) k))]
+                                                                   [ cP  (cases coeficiente-tad coefP
+                                                                           (coef-ent(n) n)
+                                                                           (coef-rac(num den) (/ num den)))]
+                                                                   [ cQ (cases coeficiente-tad coefQ
+                                                                           (coef-ent(n)n)
+                                                                           (coef-rac(num den) (/ num den)))])
+
+                                                                   (cond
+
+                                                                     ;;CASO A: el exponente de termP es mayor
+                                                                   [(> kP kQ)(mas-terminos termP (sumar-terminos restoP termsQ))]
+                                                                     ;;CASO B: el exponente de termQ es mayor
+                                                                   [(< kP kQ)(mas-terminos termQ (sumar-terminos termsP restoQ))]
+                                                                     ;;CASO C: exponentes iguales se suman
+
+                                                                   [else
+                                                                    (let([suma(+ cP cQ)])
+                                                                      (if (= suma 0)
+                                                                          (sumar-terminos restoP restoQ)
+                                                                          (mas-terminos
+                                                                           (termino (if(integer? suma)
+                                                                                       (coef-ent suma)
+                                                                                       (coef-rac (numerator suma) (denominator suma)))
+                                                                                    expoP)
+                                                                           (sumar-terminos restoP restoQ))
+                                                                        )
+                                                                      )
+                                                                    ]
+                                                                   )))))))))))])
+                       (poli varP (sumar-terminos termsP termsQ)))])))))))
+
+
+
+
+;; --- Ejemplos de construcción con los constructores del datatype ---
+
+;; Ejemplo 1: el polinomio nulo en x
+;; (poli (nombre-var 'x) (sin-terminos))
+
+;; Ejemplo 2: un polinomio con un solo término, 5x^2
+;; (poli (nombre-var 'x) (mas-terminos (termino (coef-ent 5) (expo-nat 2)) (sin-terminos)))
+
+;; Ejemplo 3: un término con coeficiente racional
+;; (termino (coef-rac -3 2) (expo-nat 2))
+
+;; Ejemplo 4: un termino con coeficiente entero y exponente 0 (término independiente)
+;; (termino (coef-ent 7) (expo-nat 0))
+
+;; Ejemplo 5: una lista de dos términos encadenados con mas-terminos
+;; (mas-terminos (termino (coef-ent 4) (expo-nat 5))
+;;   (mas-terminos (termino (coef-ent 7) (expo-nat 0))
+;;     (sin-terminos)))
+
+
+
+
+;; --- Ejemplos de uso: polinomio-cero ---
+;; (polinomio-cero 'x)
+;; (polinomio-cero 'y)
+;; (polinomio-cero 't)
+
+;; --- Ejemplos de uso: insertar-termino ---
+;; (insertar-termino (polinomio-cero 'x) 7 0)
+;; (insertar-termino (insertar-termino (polinomio-cero 'x) 7 0) -3/2 2)
+;; (insertar-termino
+;;   (insertar-termino
+;;     (insertar-termino (polinomio-cero 'x) 7 0)
+;;     -3/2 2)
+;;   4 5)
+
+;; --- Ejemplos de uso: coeficiente-de ---
+;; (define p-ejemplo
+;;   (insertar-termino
+;;     (insertar-termino
+;;       (insertar-termino (polinomio-cero 'x) 7 0)
+;;       -3/2 2)
+;;     4 5))
+;; (coeficiente-de p-ejemplo 5)    ;; -> 4
+;; (coeficiente-de p-ejemplo 2)    ;; -> -3/2
+;; (coeficiente-de p-ejemplo 0)    ;; -> 7
+
+;; --- Ejemplos de uso: eliminar-termino ---
+;; (eliminar-termino p-ejemplo 2)  ;; -> 4x^5 + 7
+;; (eliminar-termino p-ejemplo 5)  ;; -> -3/2x^2 + 7
+;; (eliminar-termino p-ejemplo 0)  ;; -> 4x^5 - 3/2x^2
+
+;; --- Ejemplos de uso: sumar ---
+;; (define q-ejemplo
+;;   (insertar-termino
+;;     (insertar-termino
+;;       (insertar-termino (polinomio-cero 'x) -4 5)
+;;       1/2 2)
+;;     2 1))
+;; (sumar p-ejemplo q-ejemplo)     ;; -> -x^2 + 2x + 7
+;; (sumar p-ejemplo p-ejemplo)     ;; -> 8x^5 - 3x^2 + 14
+;; (sumar p-ejemplo (polinomio-cero 'x))  ;; -> igual a p-ejemplo
